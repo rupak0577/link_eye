@@ -1,82 +1,74 @@
-package kuesji.link_eye;
+package kuesji.link_eye
 
-import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase
+import android.content.ContentValues
+import android.content.Context
+import kuesji.link_eye.HistoryHelper.HistoryModel
+import java.util.ArrayList
 
-import java.util.ArrayList;
-import java.util.List;
+class HistoryHelper(private val context: Context) {
+    inner class HistoryModel {
+        var id = 0
+        var epoch = 0
+        var content = ""
 
-public class HistoryHelper {
+        constructor() {}
+        constructor(id: Int, epoch: Int, content: String) {
+            this.id = id
+            this.epoch = epoch
+            this.content = content
+        }
+    }
 
-	public class HistoryModel {
-		public int id = 0;
-		public int epoch = 0;
-		public String content = "";
+    var database: SQLiteDatabase
+    fun close() {
+        database.close()
+    }
 
-		public HistoryModel(){}
-		public HistoryModel(int id, int epoch, String content){
-			this.id = id;
-			this.epoch = epoch;
-			this.content = content;
-		}
-	}
+    fun insert(content: String?) {
+        val values = ContentValues()
+        values.put("date", System.currentTimeMillis() / 1000)
+        values.put("content", content)
+        database.insert("history", null, values)
+    }
 
-	private Context context;
-	public SQLiteDatabase database;
+    fun list(): List<HistoryModel> {
+        val result: MutableList<HistoryModel> = ArrayList()
+        val cursor =
+            database.rawQuery("select id,date,content from history order by date desc", null)
+        if (cursor.moveToFirst()) {
+            do {
+                result.add(HistoryModel(cursor.getInt(0), cursor.getInt(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        return result
+    }
 
-	public HistoryHelper(Context context){
-		this.context = context;
+    fun search(query: String): List<HistoryModel> {
+        val result: MutableList<HistoryModel> = ArrayList()
+        val cursor = database.rawQuery(
+            "select id,date,content from history where content like ? order by date desc", arrayOf(
+                "%$query%"
+            )
+        )
+        if (cursor.moveToFirst()) {
+            do {
+                result.add(HistoryModel(cursor.getInt(0), cursor.getInt(1), cursor.getString(2)))
+            } while (cursor.moveToNext())
+        }
+        return result
+    }
 
-		database = context.openOrCreateDatabase("app.db",Context.MODE_PRIVATE,null);
-		database.execSQL("create table if not exists history ( id integer primary key, date integer not null, content text not null );");
-	}
+    fun delete(id: Int) {
+        database.delete("history", "id=?", arrayOf(id.toString()))
+    }
 
-	public void close(){
-		database.close();
-	}
+    fun clear() {
+        database.execSQL("delete from history")
+    }
 
-	public void insert(String content){
-		ContentValues values = new ContentValues();
-		values.put("date",System.currentTimeMillis()/1000);
-		values.put("content",content);
-		database.insert("history",null,values);
-	}
-
-	public List<HistoryModel> list(){
-		List<HistoryModel> result = new ArrayList<>();
-
-		Cursor cursor = database.rawQuery("select id,date,content from history order by date desc",null);
-
-		if( cursor.moveToFirst() ) {
-			do {
-				result.add(new HistoryModel(cursor.getInt(0),cursor.getInt(1),cursor.getString(2)));
-			} while (cursor.moveToNext());
-		}
-
-		return result;
-	}
-
-	public List<HistoryModel> search(String query){
-		List<HistoryModel> result = new ArrayList<>();
-
-		Cursor cursor = database.rawQuery("select id,date,content from history where content like ? order by date desc",new String[]{"%"+query+"%"});
-
-		if( cursor.moveToFirst() ) {
-			do {
-				result.add(new HistoryModel(cursor.getInt(0),cursor.getInt(1),cursor.getString(2)));
-			} while (cursor.moveToNext());
-		}
-
-		return result;
-	}
-
-	public void delete(int id){
-		database.delete("history","id=?",new String[]{String.valueOf(id)});
-	}
-
-	public void clear(){
-		database.execSQL("delete from history");
-	}
+    init {
+        database = context.openOrCreateDatabase("app.db", Context.MODE_PRIVATE, null)
+        database.execSQL("create table if not exists history ( id integer primary key, date integer not null, content text not null );")
+    }
 }

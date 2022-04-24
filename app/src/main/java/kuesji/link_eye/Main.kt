@@ -1,262 +1,262 @@
-package kuesji.link_eye;
+package kuesji.link_eye
 
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.AlertDialog;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.Typeface;
-import android.net.Uri;
-import android.os.Bundle;
-import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.TypedValue;
-import android.view.ContextThemeWrapper;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.*;
+import android.app.Activity
+import android.app.ActivityManager.TaskDescription
+import android.app.AlertDialog
+import android.content.ComponentName
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Typeface
+import android.net.Uri
+import android.os.Bundle
+import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.TypedValue
+import android.view.ContextThemeWrapper
+import android.view.View
+import android.view.View.OnAttachStateChangeListener
+import android.view.ViewGroup
+import android.widget.*
+import kuesji.link_eye.HistoryHelper.HistoryModel
 
-import java.util.List;
+class Main : Activity() {
+    private lateinit var contentArea: LinearLayout
+    private lateinit var tabStatusButton: Button
+    private lateinit var tabHistoryButton: Button
+    private lateinit var tabAboutButton: Button
+    private lateinit var tabStatus: View
+    private lateinit var tabStatusChange: Button
+    private lateinit var tabStatusTest: Button
+    private lateinit var tabStatusStatus: TextView
+    private lateinit var tabHistory: View
+    private lateinit var tabHistorySearch: EditText
+    private lateinit var tabHistoryDeleteAll: Button
+    private lateinit var tabHistoryContent: LinearLayout
+    private lateinit var historyHelper: HistoryHelper
+    private lateinit var tabAbout: View
 
-public class Main extends Activity {
+    private inner class HistoryEntry(context: Context?) : TextView(context) {
+        var historyId = 0
+        var historyEpoch: Long = 0
 
-	private LinearLayout contentArea;
-	private Button tabStatusButton, tabHistoryButton, tabAboutButton;
+        init {
+            typeface = Typeface.MONOSPACE
+        }
+    }
 
-	private View tabStatus;
-	private Button tabStatusChange, tabStatusTest;
-	private TextView tabStatusStatus;
+    private val tabButtonClick = View.OnClickListener { v: View ->
+        val button = v as Button
+        tabStatusButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        tabHistoryButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        tabAboutButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        button.setBackgroundColor(getColor(R.color.background_secondary))
+        contentArea!!.removeAllViews()
+        if (button === tabStatusButton) {
+            contentArea!!.addView(tabStatus)
+        } else if (button === tabHistoryButton) {
+            contentArea!!.addView(tabHistory)
+        } else if (button === tabAboutButton) {
+            contentArea!!.addView(tabAbout)
+        }
+    }
 
-	private View tabHistory;
-	private EditText tabHistorySearch;
-	private Button tabHistoryDeleteAll;
-	private LinearLayout tabHistoryContent;
-	private HistoryHelper historyHelper;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.statusBarColor = getColor(R.color.background_primary)
+        window.navigationBarColor = getColor(R.color.background_primary)
+        setTaskDescription(
+            TaskDescription(
+                getString(R.string.app_name),
+                R.drawable.ic_link_eye,
+                getColor(R.color.background_primary)
+            )
+        )
+        setContentView(R.layout.main)
+        contentArea = findViewById(R.id.main_content)
+        tabStatusButton = findViewById(R.id.main_tab_status)
+        tabStatusButton.setOnClickListener(tabButtonClick)
+        tabHistoryButton = findViewById(R.id.main_tab_history)
+        tabHistoryButton.setOnClickListener(tabButtonClick)
+        tabAboutButton = findViewById(R.id.main_tab_about)
+        tabAboutButton.setOnClickListener(tabButtonClick)
+        setup_tab_status()
+        setup_tab_history()
+        setup_tab_about()
+    }
 
-	private View tabAbout;
+    private fun setup_tab_status() {
+        tabStatus = layoutInflater.inflate(R.layout.main_status, null)
+        tabStatus.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                val browserIntent =
+                    Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"))
+                val resolveInfo =
+                    packageManager.resolveActivity(browserIntent, PackageManager.MATCH_DEFAULT_ONLY)
+                if (resolveInfo!!.activityInfo.packageName != null && resolveInfo.activityInfo.packageName == packageName) {
+                    tabStatusStatus!!.text = getString(R.string.main_status_enabled)
+                } else {
+                    tabStatusStatus!!.text = getString(R.string.main_status_disabled)
+                }
+            }
 
-	private class HistoryEntry extends TextView {
-		public int historyId = 0;
-		public long historyEpoch = 0;
+            override fun onViewDetachedFromWindow(v: View) {}
+        })
+        tabStatusChange = tabStatus.findViewById(R.id.main_status_change)
+        tabStatusChange.setOnClickListener(View.OnClickListener { vx: View? ->
+            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.main_status_error_launch_settings),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
+        tabStatusTest = tabStatus.findViewById(R.id.main_status_test)
+        tabStatusTest.setOnClickListener(View.OnClickListener { vx: View? ->
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(getString(R.string.main_status_test_url))
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.main_status_error_launch_test),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
+        tabStatusStatus = tabStatus.findViewById(R.id.main_status_status)
+    }
 
-		public HistoryEntry(Context context) {
-			super(context);
-			setTypeface(Typeface.MONOSPACE);
-		}
-	}
+    private fun setup_tab_history() {
+        tabHistory = layoutInflater.inflate(R.layout.main_history, null)
+        tabHistory.setLayoutParams(
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        tabHistory.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                historyHelper = HistoryHelper(this@Main)
+                listHistoryEntries(null)
+            }
 
-	private View.OnClickListener tabButtonClick = (v) -> {
-		Button button = (Button) v;
-		tabStatusButton.setBackgroundColor(getColor(R.color.background_seconday_not_selected));
-		tabHistoryButton.setBackgroundColor(getColor(R.color.background_seconday_not_selected));
-		tabAboutButton.setBackgroundColor(getColor(R.color.background_seconday_not_selected));
-		button.setBackgroundColor(getColor(R.color.background_secondary));
+            override fun onViewDetachedFromWindow(v: View) {
+                historyHelper!!.close()
+            }
+        })
+        tabHistorySearch = tabHistory.findViewById(R.id.main_history_search)
+        tabHistorySearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                listHistoryEntries(tabHistorySearch.getText().toString())
+            }
 
-		contentArea.removeAllViews();
-		if (button == tabStatusButton) {
-			contentArea.addView(tabStatus);
-		} else if (button == tabHistoryButton) {
-			contentArea.addView(tabHistory);
-		} else if (button == tabAboutButton) {
-			contentArea.addView(tabAbout);
-		}
+            override fun afterTextChanged(s: Editable) {}
+        })
+        tabHistoryDeleteAll = tabHistory.findViewById(R.id.main_history_delete_all)
+        tabHistoryDeleteAll.setOnClickListener(View.OnClickListener { v: View? ->
+            AlertDialog.Builder(ContextThemeWrapper(this, R.style.AlertDialogCustom))
+                .setCancelable(true)
+                .setTitle(getString(R.string.main_history_header_delete_all_title))
+                .setMessage(getString(R.string.main_history_header_delete_all_description))
+                .setNegativeButton(getString(R.string.main_history_header_delete_all_no)) { dlg: DialogInterface, which: Int -> dlg.dismiss() }
+                .setPositiveButton(getString(R.string.main_history_header_delete_all_yes)) { dlg: DialogInterface, which: Int ->
+                    historyHelper!!.clear()
+                    listHistoryEntries(null)
+                    dlg.dismiss()
+                }.show()
+        })
+        tabHistoryContent = tabHistory.findViewById(R.id.main_history_content)
+    }
 
-	};
+    private fun setup_tab_about() {
+        tabAbout = layoutInflater.inflate(R.layout.main_about, null)
+    }
 
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    private fun generateHistoryEntry(): HistoryEntry {
+        val entry = HistoryEntry(this)
+        entry.layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        entry.setPadding(16, 16, 16, 16)
+        entry.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        entry.setTextColor(getColor(R.color.foreground_primary))
+        entry.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f)
+        entry.text = "https://kuesji.koesnu.com"
+        entry.setOnClickListener { v: View? ->
+            AlertDialog.Builder(ContextThemeWrapper(this, R.style.AlertDialogCustom))
+                .setTitle(getString(R.string.main_history_url_clicked_title))
+                .setMessage(entry.text.toString())
+                .setPositiveButton(getString(R.string.main_history_url_clicked_open)) { dlg: DialogInterface?, which: Int ->
+                    val intent = Intent(Intent.ACTION_SEND)
+                    intent.putExtra(Intent.EXTRA_TEXT, entry.text.toString())
+                    intent.component =
+                        ComponentName.createRelative(packageName, LinkHandler::class.java.name)
+                    startActivity(intent)
+                }
+                .setNegativeButton(getString(R.string.main_history_url_clicked_delete)) { dlg: DialogInterface?, which: Int ->
+                    historyHelper!!.delete(entry.historyId)
+                    tabHistoryContent!!.removeView(entry)
+                }
+                .setNeutralButton(getString(R.string.main_history_url_clicked_cancel)) { dlg: DialogInterface?, which: Int -> }
+                .show()
+        }
+        return entry
+    }
 
-		getWindow().setStatusBarColor(getColor(R.color.background_primary));
-		getWindow().setNavigationBarColor(getColor(R.color.background_primary));
+    private fun listHistoryEntries(query: String?) {
+        val historyEntries: List<HistoryModel>
+        historyEntries = if (query == null) {
+            historyHelper!!.list()
+        } else {
+            historyHelper!!.search(query)
+        }
+        tabHistoryContent!!.removeAllViews()
+        if (historyEntries.size < 0) {
+        } else {
+            for (model in historyEntries) {
+                val view = generateHistoryEntry()
+                view.text = model.content
+                view.historyId = model.id
+                view.historyEpoch = model.epoch.toLong()
+                tabHistoryContent!!.addView(view)
+                val divider = View(this)
+                divider.layoutParams =
+                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 4)
+                tabHistoryContent!!.addView(divider)
+            }
+        }
+    }
 
-		setTaskDescription(new ActivityManager.TaskDescription(getString(R.string.app_name), R.drawable.ic_link_eye, getColor(R.color.background_primary)));
-
-		setContentView(R.layout.main);
-		contentArea = findViewById(R.id.main_content);
-		tabStatusButton = findViewById(R.id.main_tab_status);
-		tabStatusButton.setOnClickListener(tabButtonClick);
-		tabHistoryButton = findViewById(R.id.main_tab_history);
-		tabHistoryButton.setOnClickListener(tabButtonClick);
-		tabAboutButton = findViewById(R.id.main_tab_about);
-		tabAboutButton.setOnClickListener(tabButtonClick);
-
-		setup_tab_status();
-		setup_tab_history();
-		setup_tab_about();
-	}
-
-	private void setup_tab_status() {
-		tabStatus = getLayoutInflater().inflate(R.layout.main_status, null);
-		tabStatus.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-
-			public void onViewAttachedToWindow(View v) {
-				Intent browserIntent = new Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"));
-				ResolveInfo resolveInfo = getPackageManager().resolveActivity(browserIntent, PackageManager.MATCH_DEFAULT_ONLY);
-
-				if (resolveInfo.activityInfo.packageName != null && resolveInfo.activityInfo.packageName.equals(getPackageName())) {
-					tabStatusStatus.setText(getString(R.string.main_status_enabled));
-				} else {
-					tabStatusStatus.setText(getString(R.string.main_status_disabled));
-				}
-			}
-
-			public void onViewDetachedFromWindow(View v) {
-			}
-		});
-		tabStatusChange = tabStatus.findViewById(R.id.main_status_change);
-		tabStatusChange.setOnClickListener((vx) -> {
-			Intent intent = new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
-			try {
-				startActivity(intent);
-			} catch (Exception e) {
-				Toast.makeText(this, getString(R.string.main_status_error_launch_settings), Toast.LENGTH_LONG).show();
-			}
-		});
-		tabStatusTest = tabStatus.findViewById(R.id.main_status_test);
-		tabStatusTest.setOnClickListener((vx) -> {
-			Intent intent = new Intent(Intent.ACTION_VIEW);
-			intent.setData(Uri.parse(getString(R.string.main_status_test_url)));
-			try {
-				startActivity(intent);
-			} catch (Exception e) {
-				Toast.makeText(this, getString(R.string.main_status_error_launch_test), Toast.LENGTH_LONG).show();
-			}
-		});
-		tabStatusStatus = tabStatus.findViewById(R.id.main_status_status);
-	}
-
-	private void setup_tab_history() {
-		tabHistory = getLayoutInflater().inflate(R.layout.main_history, null);
-		tabHistory.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-		tabHistory.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-			public void onViewAttachedToWindow(View v) {
-				historyHelper = new HistoryHelper(Main.this);
-				listHistoryEntries(null);
-			}
-
-			public void onViewDetachedFromWindow(View v) {
-				historyHelper.close();
-			}
-		});
-		tabHistorySearch = tabHistory.findViewById(R.id.main_history_search);
-		tabHistorySearch.addTextChangedListener(new TextWatcher() {
-			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-			}
-
-			public void onTextChanged(CharSequence s, int start, int before, int count) {
-				listHistoryEntries(tabHistorySearch.getText().toString());
-			}
-
-			public void afterTextChanged(Editable s) {
-			}
-		});
-		tabHistoryDeleteAll = tabHistory.findViewById(R.id.main_history_delete_all);
-		tabHistoryDeleteAll.setOnClickListener((v) -> {
-			new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialogCustom))
-			 .setCancelable(true)
-			 .setTitle(getString(R.string.main_history_header_delete_all_title))
-			 .setMessage(getString(R.string.main_history_header_delete_all_description))
-			 .setNegativeButton(getString(R.string.main_history_header_delete_all_no), (dlg, which) -> {
-				 dlg.dismiss();
-			 })
-			 .setPositiveButton(getString(R.string.main_history_header_delete_all_yes), (dlg, which) -> {
-				 historyHelper.clear();
-				 listHistoryEntries(null);
-				 dlg.dismiss();
-			 }).show();
-		});
-		tabHistoryContent = tabHistory.findViewById(R.id.main_history_content);
-	}
-
-	private void setup_tab_about(){
-		tabAbout = getLayoutInflater().inflate(R.layout.main_about,null);
-	}
-
-	private HistoryEntry generateHistoryEntry() {
-		HistoryEntry entry = new HistoryEntry(this);
-		entry.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-		entry.setPadding(16, 16, 16, 16);
-		entry.setBackgroundColor(getColor(R.color.background_seconday_not_selected));
-		entry.setTextColor(getColor(R.color.foreground_primary));
-		entry.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-		entry.setText("https://kuesji.koesnu.com");
-
-		entry.setOnClickListener((v) -> {
-			new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialogCustom))
-			 .setTitle(getString(R.string.main_history_url_clicked_title))
-			 .setMessage(entry.getText().toString())
-			 .setPositiveButton(getString(R.string.main_history_url_clicked_open), (dlg, which) -> {
-				 Intent intent = new Intent(Intent.ACTION_SEND);
-				 intent.putExtra(Intent.EXTRA_TEXT, entry.getText().toString());
-				 intent.setComponent(ComponentName.createRelative(getPackageName(), LinkHandler.class.getName()));
-				 startActivity(intent);
-			 })
-			 .setNegativeButton(getString(R.string.main_history_url_clicked_delete), (dlg, which) -> {
-				 historyHelper.delete(entry.historyId);
-				 tabHistoryContent.removeView(entry);
-			 })
-			 .setNeutralButton(getString(R.string.main_history_url_clicked_cancel), (dlg, which) -> {
-				 /* ¯\_(ツ)_/¯ */
-			 }).show();
-		});
-
-		return entry;
-	}
-
-	private void listHistoryEntries(String query) {
-		List<HistoryHelper.HistoryModel> historyEntries;
-		if (query == null) {
-			historyEntries = historyHelper.list();
-		} else {
-			historyEntries = historyHelper.search(query);
-		}
-
-		tabHistoryContent.removeAllViews();
-		if (historyEntries.size() < 0) {
-
-		} else {
-			for (HistoryHelper.HistoryModel model : historyEntries) {
-				HistoryEntry view = generateHistoryEntry();
-				view.setText(model.content);
-				view.historyId = model.id;
-				view.historyEpoch = model.epoch;
-				tabHistoryContent.addView(view);
-				View divider = new View(this);
-				divider.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 4));
-				tabHistoryContent.addView(divider);
-			}
-		}
-	}
-
-	protected void onStart() {
-		super.onStart();
-
-		if (contentArea.getChildCount() < 1) {
-			tabStatusButton.performClick();
-		}
-
-		if (tabStatus.getParent() != null) {
-			Intent browserIntent = new Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"));
-			ResolveInfo resolveInfo = getPackageManager().resolveActivity(browserIntent, PackageManager.MATCH_DEFAULT_ONLY);
-
-			if (resolveInfo.activityInfo.packageName != null && resolveInfo.activityInfo.packageName.equals(getPackageName())) {
-				tabStatusStatus.setText(getString(R.string.main_status_enabled));
-			} else {
-				tabStatusStatus.setText(getString(R.string.main_status_disabled));
-			}
-		}
-
-		if (tabHistory.getParent() != null) {
-			if( tabHistorySearch.getText().toString().length() < 1 ){
-				listHistoryEntries(null);
-			}
-		}
-
-	}
+    override fun onStart() {
+        super.onStart()
+        if (contentArea!!.childCount < 1) {
+            tabStatusButton!!.performClick()
+        }
+        if (tabStatus!!.parent != null) {
+            val browserIntent =
+                Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"))
+            val resolveInfo =
+                packageManager.resolveActivity(browserIntent, PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolveInfo!!.activityInfo.packageName != null && resolveInfo.activityInfo.packageName == packageName) {
+                tabStatusStatus!!.text = getString(R.string.main_status_enabled)
+            } else {
+                tabStatusStatus!!.text = getString(R.string.main_status_disabled)
+            }
+        }
+        if (tabHistory!!.parent != null) {
+            if (tabHistorySearch!!.text.toString().length < 1) {
+                listHistoryEntries(null)
+            }
+        }
+    }
 }
