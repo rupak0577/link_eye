@@ -21,22 +21,24 @@ import android.view.View.OnAttachStateChangeListener
 import android.view.ViewGroup
 import android.widget.*
 import kuesji.link_eye.HistoryHelper.HistoryModel
+import kuesji.link_eye.databinding.MainAboutBinding
+import kuesji.link_eye.databinding.MainBinding
+import kuesji.link_eye.databinding.MainHistoryBinding
+import kuesji.link_eye.databinding.MainStatusBinding
 
 class Main : Activity() {
-    private lateinit var contentArea: LinearLayout
-    private lateinit var tabStatusButton: Button
-    private lateinit var tabHistoryButton: Button
-    private lateinit var tabAboutButton: Button
-    private lateinit var tabStatus: View
+    private lateinit var binding: MainBinding
+
+    private lateinit var tabStatus: MainStatusBinding
     private lateinit var tabStatusChange: Button
     private lateinit var tabStatusTest: Button
     private lateinit var tabStatusStatus: TextView
-    private lateinit var tabHistory: View
+    private lateinit var tabHistory: MainHistoryBinding
     private lateinit var tabHistorySearch: EditText
     private lateinit var tabHistoryDeleteAll: Button
     private lateinit var tabHistoryContent: LinearLayout
     private lateinit var historyHelper: HistoryHelper
-    private lateinit var tabAbout: View
+    private lateinit var tabAbout: MainAboutBinding
 
     private inner class HistoryEntry(context: Context?) : TextView(context) {
         var historyId = 0
@@ -49,17 +51,17 @@ class Main : Activity() {
 
     private val tabButtonClick = View.OnClickListener { v: View ->
         val button = v as Button
-        tabStatusButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
-        tabHistoryButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
-        tabAboutButton!!.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        binding.mainTabStatus.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        binding.mainTabHistory.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        binding.mainTabAbout.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
         button.setBackgroundColor(getColor(R.color.background_secondary))
-        contentArea!!.removeAllViews()
-        if (button === tabStatusButton) {
-            contentArea!!.addView(tabStatus)
-        } else if (button === tabHistoryButton) {
-            contentArea!!.addView(tabHistory)
-        } else if (button === tabAboutButton) {
-            contentArea!!.addView(tabAbout)
+        binding.mainContent.removeAllViews()
+        if (button === binding.mainTabStatus) {
+            binding.mainContent.addView(tabStatus.root)
+        } else if (button === binding.mainTabHistory) {
+            binding.mainContent.addView(tabHistory.root)
+        } else if (button === binding.mainTabAbout) {
+            binding.mainContent.addView(tabAbout.root)
         }
     }
 
@@ -74,22 +76,19 @@ class Main : Activity() {
                 getColor(R.color.background_primary)
             )
         )
-        setContentView(R.layout.main)
-        contentArea = findViewById(R.id.main_content)
-        tabStatusButton = findViewById(R.id.main_tab_status)
-        tabStatusButton.setOnClickListener(tabButtonClick)
-        tabHistoryButton = findViewById(R.id.main_tab_history)
-        tabHistoryButton.setOnClickListener(tabButtonClick)
-        tabAboutButton = findViewById(R.id.main_tab_about)
-        tabAboutButton.setOnClickListener(tabButtonClick)
+        binding = MainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.mainTabStatus.setOnClickListener(tabButtonClick)
+        binding.mainTabHistory.setOnClickListener(tabButtonClick)
+        binding.mainTabAbout.setOnClickListener(tabButtonClick)
         setup_tab_status()
         setup_tab_history()
         setup_tab_about()
     }
 
     private fun setup_tab_status() {
-        tabStatus = layoutInflater.inflate(R.layout.main_status, null)
-        tabStatus.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
+        tabStatus = MainStatusBinding.inflate(layoutInflater)
+        tabStatus.root.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
                 val browserIntent =
                     Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"))
@@ -104,7 +103,7 @@ class Main : Activity() {
 
             override fun onViewDetachedFromWindow(v: View) {}
         })
-        tabStatusChange = tabStatus.findViewById(R.id.main_status_change)
+        tabStatusChange = tabStatus.mainStatusChange
         tabStatusChange.setOnClickListener(View.OnClickListener { vx: View? ->
             val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
             try {
@@ -117,7 +116,7 @@ class Main : Activity() {
                 ).show()
             }
         })
-        tabStatusTest = tabStatus.findViewById(R.id.main_status_test)
+        tabStatusTest = tabStatus.mainStatusTest
         tabStatusTest.setOnClickListener(View.OnClickListener { vx: View? ->
             val intent = Intent(Intent.ACTION_VIEW)
             intent.data = Uri.parse(getString(R.string.main_status_test_url))
@@ -131,18 +130,18 @@ class Main : Activity() {
                 ).show()
             }
         })
-        tabStatusStatus = tabStatus.findViewById(R.id.main_status_status)
+        tabStatusStatus = tabStatus.mainStatusStatus
     }
 
     private fun setup_tab_history() {
-        tabHistory = layoutInflater.inflate(R.layout.main_history, null)
-        tabHistory.setLayoutParams(
+        tabHistory = MainHistoryBinding.inflate(layoutInflater)
+        tabHistory.root.setLayoutParams(
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         )
-        tabHistory.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
+        tabHistory.root.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
                 historyHelper = HistoryHelper(this@Main)
                 listHistoryEntries(null)
@@ -152,7 +151,7 @@ class Main : Activity() {
                 historyHelper!!.close()
             }
         })
-        tabHistorySearch = tabHistory.findViewById(R.id.main_history_search)
+        tabHistorySearch = tabHistory.mainHistorySearch
         tabHistorySearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -161,7 +160,7 @@ class Main : Activity() {
 
             override fun afterTextChanged(s: Editable) {}
         })
-        tabHistoryDeleteAll = tabHistory.findViewById(R.id.main_history_delete_all)
+        tabHistoryDeleteAll = tabHistory.mainHistoryDeleteAll
         tabHistoryDeleteAll.setOnClickListener(View.OnClickListener { v: View? ->
             AlertDialog.Builder(ContextThemeWrapper(this, R.style.AlertDialogCustom))
                 .setCancelable(true)
@@ -174,11 +173,11 @@ class Main : Activity() {
                     dlg.dismiss()
                 }.show()
         })
-        tabHistoryContent = tabHistory.findViewById(R.id.main_history_content)
+        tabHistoryContent = MainHistoryBinding.inflate(layoutInflater).mainHistoryContent
     }
 
     private fun setup_tab_about() {
-        tabAbout = layoutInflater.inflate(R.layout.main_about, null)
+        tabAbout = MainAboutBinding.inflate(layoutInflater)
     }
 
     private fun generateHistoryEntry(): HistoryEntry {
@@ -239,10 +238,10 @@ class Main : Activity() {
 
     override fun onStart() {
         super.onStart()
-        if (contentArea!!.childCount < 1) {
-            tabStatusButton!!.performClick()
+        if (binding.mainContent.childCount < 1) {
+            binding.mainTabStatus.performClick()
         }
-        if (tabStatus!!.parent != null) {
+        if (tabStatus.root.parent != null) {
             val browserIntent =
                 Intent("android.intent.action.VIEW", Uri.parse("https://kuesji.koesnu.com"))
             val resolveInfo =
@@ -253,7 +252,7 @@ class Main : Activity() {
                 tabStatusStatus!!.text = getString(R.string.main_status_disabled)
             }
         }
-        if (tabHistory!!.parent != null) {
+        if (tabHistory.root.parent != null) {
             if (tabHistorySearch!!.text.toString().length < 1) {
                 listHistoryEntries(null)
             }
