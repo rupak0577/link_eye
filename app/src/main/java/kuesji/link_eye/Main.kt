@@ -10,28 +10,6 @@ import kuesji.link_eye.databinding.MainBinding
 class Main : FragmentActivity() {
     private lateinit var binding: MainBinding
 
-    private val tabButtonClick = View.OnClickListener { v: View ->
-        val button = v as Button
-        binding.mainTabStatus.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
-        binding.mainTabHistory.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
-        binding.mainTabAbout.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
-        button.setBackgroundColor(getColor(R.color.background_secondary))
-        binding.mainContent.removeAllViews()
-        if (button === binding.mainTabStatus) {
-            supportFragmentManager.beginTransaction()
-                .replace(binding.mainContent.id, FragmentStatus())
-                .commit()
-        } else if (button === binding.mainTabHistory) {
-            supportFragmentManager.beginTransaction()
-                .replace(binding.mainContent.id, FragmentHistory())
-                .commit()
-        } else if (button === binding.mainTabAbout) {
-            supportFragmentManager.beginTransaction()
-                .replace(binding.mainContent.id, FragmentAbout())
-                .commit()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = getColor(R.color.background_primary)
@@ -45,15 +23,47 @@ class Main : FragmentActivity() {
         )
         binding = MainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.mainTabStatus.setOnClickListener(tabButtonClick)
-        binding.mainTabHistory.setOnClickListener(tabButtonClick)
-        binding.mainTabAbout.setOnClickListener(tabButtonClick)
+
+        loadStatusTab()
+
+        binding.mainTabStatus.setOnClickListener {
+            loadStatusTab()
+        }
+
+        binding.mainTabHistory.setOnClickListener {
+            resetTabColors()
+            binding.mainTabHistory.setBackgroundColor(getColor(R.color.background_secondary))
+
+            if (supportFragmentManager.findFragmentByTag("HistoryFragment") == null)
+                supportFragmentManager.beginTransaction()
+                    .replace(binding.mainContent.id, FragmentHistory(), "HistoryFragment")
+                    .commit()
+        }
+
+        binding.mainTabAbout.setOnClickListener {
+            resetTabColors()
+            binding.mainTabAbout.setBackgroundColor(getColor(R.color.background_secondary))
+
+            if (supportFragmentManager.findFragmentByTag("AboutFragment") == null)
+                supportFragmentManager.beginTransaction()
+                    .replace(binding.mainContent.id, FragmentAbout(), "AboutFragment")
+                    .commit()
+        }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (binding.mainContent.childCount < 1) {
-            binding.mainTabStatus.performClick()
-        }
+    private fun loadStatusTab() {
+        resetTabColors()
+        binding.mainTabStatus.setBackgroundColor(getColor(R.color.background_secondary))
+
+        if (supportFragmentManager.findFragmentByTag("StatusFragment") == null)
+            supportFragmentManager.beginTransaction()
+                .replace(binding.mainContent.id, FragmentStatus(), "StatusFragment")
+                .commit()
+    }
+
+    private fun resetTabColors() {
+        binding.mainTabStatus.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        binding.mainTabHistory.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
+        binding.mainTabAbout.setBackgroundColor(getColor(R.color.background_seconday_not_selected))
     }
 }
