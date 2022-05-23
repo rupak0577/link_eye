@@ -28,6 +28,8 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    namespace 'kuesji.link_eye'
 }
 
 dependencies {
