@@ -1,74 +1,33 @@
 package kuesji.link_eye
 
-import android.database.sqlite.SQLiteDatabase
-import android.content.ContentValues
 import android.content.Context
-import kuesji.link_eye.HistoryHelper.HistoryModel
-import java.util.ArrayList
+import androidx.room.Room
+import kuesji.link_eye.db.AppDatabase
+import kuesji.link_eye.db.HistoryModel
 
-class HistoryHelper(private val context: Context) {
-    inner class HistoryModel {
-        var id = 0
-        var epoch = 0
-        var content = ""
+class HistoryHelper(context: Context) {
+    private var db: AppDatabase
 
-        constructor() {}
-        constructor(id: Int, epoch: Int, content: String) {
-            this.id = id
-            this.epoch = epoch
-            this.content = content
-        }
+    init {
+        db = Room.databaseBuilder(
+            context.applicationContext,
+            AppDatabase::class.java, "app.db"
+        ).build()
     }
 
-    var database: SQLiteDatabase
-    fun close() {
-        database.close()
-    }
-
-    fun insert(content: String?) {
-        val values = ContentValues()
-        values.put("date", System.currentTimeMillis() / 1000)
-        values.put("content", content)
-        database.insert("history", null, values)
+    fun insert(content: String) {
+        db.historyDao().insert(HistoryModel(System.currentTimeMillis() / 1000, content))
     }
 
     fun list(): List<HistoryModel> {
-        val result: MutableList<HistoryModel> = ArrayList()
-        val cursor =
-            database.rawQuery("select id,date,content from history order by date desc", null)
-        if (cursor.moveToFirst()) {
-            do {
-                result.add(HistoryModel(cursor.getInt(0), cursor.getInt(1), cursor.getString(2)))
-            } while (cursor.moveToNext())
-        }
-        return result
+        return db.historyDao().getAllByDateDesc()
     }
 
     fun search(query: String): List<HistoryModel> {
-        val result: MutableList<HistoryModel> = ArrayList()
-        val cursor = database.rawQuery(
-            "select id,date,content from history where content like ? order by date desc", arrayOf(
-                "%$query%"
-            )
-        )
-        if (cursor.moveToFirst()) {
-            do {
-                result.add(HistoryModel(cursor.getInt(0), cursor.getInt(1), cursor.getString(2)))
-            } while (cursor.moveToNext())
-        }
-        return result
+        return db.historyDao().search(query)
     }
 
     fun delete(id: Int) {
-        database.delete("history", "id=?", arrayOf(id.toString()))
-    }
-
-    fun clear() {
-        database.execSQL("delete from history")
-    }
-
-    init {
-        database = context.openOrCreateDatabase("app.db", Context.MODE_PRIVATE, null)
-        database.execSQL("create table if not exists history ( id integer primary key, date integer not null, content text not null );")
+        db.historyDao().delete(id)
     }
 }

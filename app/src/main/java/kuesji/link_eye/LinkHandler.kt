@@ -88,7 +88,6 @@ class LinkHandler : Activity() {
         actionOpen.performClick()
         val historyHelper = HistoryHelper(this)
         historyHelper.insert(urlArea.getText().toString())
-        historyHelper.close()
     }
 
     private fun listHandlers(target: String) {

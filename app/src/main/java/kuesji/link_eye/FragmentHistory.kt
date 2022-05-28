@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import kuesji.link_eye.databinding.MainHistoryBinding
+import kuesji.link_eye.db.HistoryModel
 
 class FragmentHistory : Fragment() {
     private var _binding: MainHistoryBinding? = null
@@ -72,7 +73,6 @@ class FragmentHistory : Fragment() {
                 .setMessage(getString(R.string.main_history_header_delete_all_description))
                 .setNegativeButton(getString(R.string.main_history_header_delete_all_no)) { dlg: DialogInterface, which: Int -> dlg.dismiss() }
                 .setPositiveButton(getString(R.string.main_history_header_delete_all_yes)) { dlg: DialogInterface, which: Int ->
-                    historyHelper.clear()
                     listHistoryEntries(null)
                     dlg.dismiss()
                 }.show()
@@ -82,7 +82,7 @@ class FragmentHistory : Fragment() {
     }
 
     private fun listHistoryEntries(query: String?) {
-        val historyEntries: List<HistoryHelper.HistoryModel> = if (query == null) {
+        val historyEntries: List<HistoryModel> = if (query == null) {
             historyHelper.list()
         } else {
             historyHelper.search(query)
@@ -94,7 +94,7 @@ class FragmentHistory : Fragment() {
                 val view = generateHistoryEntry()
                 view.text = model.content
                 view.historyId = model.id
-                view.historyEpoch = model.epoch.toLong()
+                view.historyEpoch = model.date.toLong()
                 binding.mainHistoryContent.addView(view)
                 val divider = View(requireContext())
                 divider.layoutParams =
@@ -141,7 +141,6 @@ class FragmentHistory : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        historyHelper.close()
         _binding = null
     }
 }

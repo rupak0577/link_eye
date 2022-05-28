@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'kotlin-kapt'
 }
 
 android {
@@ -42,4 +43,8 @@ dependencies {
 
     def fragment_version = "1.4.1"
     implementation "androidx.fragment:fragment-ktx:$fragment_version"
+
+    def room_version = "2.4.2"
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
 }
