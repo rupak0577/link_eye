@@ -1,23 +1,21 @@
 package kuesji.link_eye
 
 import android.app.Activity
-import android.os.Bundle
 import android.app.ActivityManager.TaskDescription
 import android.content.*
-import kuesji.link_eye.R
-import kuesji.link_eye.HistoryHelper
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import kuesji.link_eye.LinkHandler.HandlerEntry
-import android.graphics.drawable.Drawable
-import android.view.ViewGroup
-import android.view.Gravity
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
-import java.lang.Exception
 import java.text.Collator
 import java.util.*
 
@@ -27,6 +25,9 @@ class LinkHandler : Activity() {
     private lateinit var actionOpen: Button
     private lateinit var actionShare: Button
     private lateinit var contentArea: LinearLayout
+    private lateinit var actionSave: CheckBox
+
+    private var currentAction = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +42,15 @@ class LinkHandler : Activity() {
         )
         setContentView(R.layout.link_handler)
         urlArea = findViewById(R.id.link_handler_url)
+        urlArea.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                listHandlers(if (currentAction == "") "open" else currentAction)
+            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+        actionSave = findViewById(R.id.link_handler_save_check)
         actionCopy = findViewById(R.id.link_handler_action_copy)
         actionCopy.setOnClickListener(View.OnClickListener { v: View? ->
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
@@ -91,6 +101,8 @@ class LinkHandler : Activity() {
     }
 
     private fun listHandlers(target: String) {
+        currentAction = target
+
         val pm = packageManager
         val intent = Intent()
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
